@@ -1,5 +1,5 @@
 from flask import Flask, current_app
-from flask_restful import Resource, Api, reqparse, abort
+from flask_restful import Resource, Api, reqparse, abort, fields, marshal_with
 from flask_sqlalchemy import SQLAlchemy 
 
 app = Flask(__name__)
@@ -16,13 +16,10 @@ with app.app_context():
     db.create_all()
     print(current_app.name)
 
-
-
-
-todos = {
-    1 : {"task": "Write a hello world program","summary": "write code with python."},
-    2 : {"task": "Write a hello world program","summary": "write code with Java."},
-    3 : {"task": "Write a hello world program","summary": "write code with C."}
+resource_fields = {
+    'id': fields.Integer,
+    'task': fields.String,
+    'summary': fields.String
 }
 
 task_post_args = reqparse.RequestParser()
@@ -34,33 +31,52 @@ task_put_args.add_argument("task", type=str)
 task_put_args.add_argument("summary", type=str)
 
 class ToDo(Resource):
+    @marshal_with(resource_fields)
     def get(self, todo_id):
-        return todos[todo_id]
+        task = ToDoModel.query.filter_by(id=todo_id).first()
+        if not task:
+            abort(409, message="Could not find task with that id")
+        return task
     
-    def post(self, todo_id):
-        args = task_post_args.parse_args()
-        if todo_id in todos:
-            abort(409, "Task Id already taken")
-        todos[todo_id] = {"task":args["task"], "summary":args["summary"]}
-        return todos[todo_id]
     
+    @marshal_with(resource_fields)
     def put(self, todo_id):
         args = task_put_args.parse_args()
-        if todo_id not in todos:
-            abort(404, message="Task does not exist, cannot update")
+        task = ToDoModel.query.filter_by(id=todo_id).first()
+        if not task:
+            abort(404, message="task doesnot exist, cannot update")
         if args['task']:
-            todos[todo_id]['task'] = args['task']
+            task.task = args['task']
         if args['summary']:
-            todos[todo_id]['summary'] = args['summary']
-        return todos[todo_id]
+            task.summary = args['summary']
+        db.session.commit()
+        return task
 
     def delete(self, todo_id):
-        del todos[todo_id]
-        return todos
+        task = ToDoModel.query.filter_by(id=todo_id).first()
+        if not task:
+            abort(404, message="task not found")
+        db.session.delete(task)
+        db.session.commit()
+        return "ToDo deleted", 204
 
 class ToDoList(Resource):
     def get(self):
+        tasks = ToDoModel.query.all()
+        todos = {}
+
+        for task in tasks:
+            todos[task.id] = {"task": task.task, "summary": task.summary}
         return todos
+    
+    @marshal_with(resource_fields)
+    def post(self):
+        args = task_post_args.parse_args()
+        todo = ToDoModel(task=args['task'], summary=args['summary'])
+        db.session.add(todo)
+        db.session.commit()
+        return todo, 201
+
 
 api.add_resource(ToDo, '/todos/<int:todo_id>')
 api.add_resource(ToDoList, "/todos")
