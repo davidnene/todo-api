@@ -14,6 +14,10 @@ task_post_args = reqparse.RequestParser()
 task_post_args.add_argument("task", type=str, help="task is required", required=True)
 task_post_args.add_argument("summary", type=str, help="Summary is required", required=True)
 
+task_put_args = reqparse.RequestParser()
+task_put_args.add_argument("task", type=str)
+task_put_args.add_argument("summary", type=str)
+
 class ToDo(Resource):
     def get(self, todo_id):
         return todos[todo_id]
@@ -25,6 +29,16 @@ class ToDo(Resource):
         todos[todo_id] = {"task":args["task"], "summary":args["summary"]}
         return todos[todo_id]
     
+    def put(self, todo_id):
+        args = task_put_args.parse_args()
+        if todo_id not in todos:
+            abort(404, message="Task does not exist, cannot update")
+        if args['task']:
+            todos[todo_id]['task'] = args['task']
+        if args['summary']:
+            todos[todo_id]['summary'] = args['summary']
+        return todos[todo_id]
+
     def delete(self, todo_id):
         del todos[todo_id]
         return todos
