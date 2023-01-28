@@ -8,6 +8,12 @@ api = Api(app)
 app.config['SQL_ALCHEMY_DATABASE_URI'] = 'sqlite:///aqlite.db'
 db = SQLAlchemy(app)
 
+class ToDoModel(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    task = db.Column(db.String(200))
+    summary = db.Column(db.String(500))
+
+
 todos = {
     1 : {"task": "Write a hello world program","summary": "write code with python."},
     2 : {"task": "Write a hello world program","summary": "write code with Java."},
