@@ -17,12 +17,17 @@ task_post_args.add_argument("summary", type=str, help="Summary is required", req
 class ToDo(Resource):
     def get(self, todo_id):
         return todos[todo_id]
+    
     def post(self, todo_id):
         args = task_post_args.parse_args()
         if todo_id in todos:
             abort(409, "Task Id already taken")
         todos[todo_id] = {"task":args["task"], "summary":args["summary"]}
         return todos[todo_id]
+    
+    def delete(self, todo_id):
+        del todos[todo_id]
+        return todos
 
 class ToDoList(Resource):
     def get(self):
