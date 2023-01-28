@@ -1,17 +1,22 @@
-from flask import Flask
+from flask import Flask, current_app
 from flask_restful import Resource, Api, reqparse, abort
 from flask_sqlalchemy import SQLAlchemy 
 
 app = Flask(__name__)
 api = Api(app)
 
-app.config['SQL_ALCHEMY_DATABASE_URI'] = 'sqlite:///aqlite.db'
-db = SQLAlchemy(app)
+with app.app_context():
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///aqlite.db'
+    db = SQLAlchemy(app)
 
-class ToDoModel(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    task = db.Column(db.String(200))
-    summary = db.Column(db.String(500))
+    class ToDoModel(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        task = db.Column(db.String(200))
+        summary = db.Column(db.String(500))
+    db.create_all()
+    print(current_app.name)
+
+
 
 
 todos = {
