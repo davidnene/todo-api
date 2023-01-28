@@ -1,5 +1,5 @@
 from flask import Flask
-from flask_restful import Resource, Api
+from flask_restful import Resource, Api, reqparse, abort
 
 app = Flask(__name__)
 api = Api(app)
@@ -10,8 +10,18 @@ todos = {
     3 : {"task": "Write a hello world program","summary": "write code with C."}
 }
 
+task_post_args = reqparse.RequestParser()
+task_post_args.add_argument("task", type=str, help="task is required", required=True)
+task_post_args.add_argument("summary", type=str, help="Summary is required", required=True)
+
 class ToDo(Resource):
     def get(self, todo_id):
+        return todos[todo_id]
+    def post(self, todo_id):
+        args = task_post_args.parse_args()
+        if todo_id in todos:
+            abort(409, "Task Id already taken")
+        todos[todo_id] = {"task":args["task"], "summary":args["summary"]}
         return todos[todo_id]
 
 class ToDoList(Resource):
@@ -20,5 +30,7 @@ class ToDoList(Resource):
 
 api.add_resource(ToDo, '/todos/<int:todo_id>')
 api.add_resource(ToDoList, "/todos")
+
+
 if __name__ == "__main__":
     app.run(debug=True)
